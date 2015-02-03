@@ -8,9 +8,10 @@ module Shenzhen::Plugins
     class Client
       HOSTNAME = 'upload.hockeyapp.net'
 
-      def initialize(api_token)
+      def initialize(api_token, host=nil)
         @api_token = api_token
-        @connection = Faraday.new(:url => "https://#{HOSTNAME}") do |builder|
+        hostname = host || HOSTNAME
+        @connection = Faraday.new(:url => "https://#{hostname}") do |builder|
           builder.request :multipart
           builder.request :url_encoded
           builder.response :json, :content_type => /\bjson$/
@@ -46,6 +47,7 @@ command :'distribute:hockeyapp' do |c|
   c.syntax = "ipa distribute:hockeyapp [options]"
   c.summary = "Distribute an .ipa file over HockeyApp"
   c.description = ""
+  c.option '-h', '--host HOST', "HockeyApp host (defaults to upload.hockeyapp.net)"
   c.option '-f', '--file FILE', ".ipa file for the build"
   c.option '-d', '--dsym FILE', "zipped .dsym package for the build"
   c.option '-a', '--token TOKEN', "API Token. Available at https://rink.hockeyapp.net/manage/auth_tokens"
@@ -101,7 +103,7 @@ command :'distribute:hockeyapp' do |c|
     parameters[:build_server_url] = options.build_server_url if options.build_server_url
     parameters[:repository_url] = options.repository_url if options.repository_url
 
-    client = Shenzhen::Plugins::HockeyApp::Client.new(@api_token)
+    client = Shenzhen::Plugins::HockeyApp::Client.new(@api_token, options.host)
     response = client.upload_build(@file, parameters)
     case response.status
     when 200...300
